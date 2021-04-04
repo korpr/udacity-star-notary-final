@@ -122,3 +122,9 @@ packages/debugger/.tmp
 
 # @truffle/contract
 packages/contract/dist
+
+app/public/
+
+build/
+
+app/package-lock.json
