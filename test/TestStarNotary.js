@@ -81,13 +81,32 @@ it('can add the star name and star symbol properly', async () => {
     let instance = await StarNotary.deployed();
     
     let user1 = accounts[1];
-    let starId = 67;
+    let starId = 6;
     
     await instance.createStar("the new start", starId, { from: user1 });
     //2. Call the name and symbol properties in your Smart Contract and compare with the name and symbol provided
  
     assert.equal(await instance.symbol(), "SNF");
     assert.equal(await instance.name(), "StartNotaryFinal");
+});
+
+it('lookUptokenIdToStarInfo test', async () => {
+    // 1. create a Star with different tokenId
+    let instance = await StarNotary.deployed();
+    
+    let user1 = accounts[1];
+    let starName = 'Star for lookup';
+    let starId = 7;
+    
+    await instance.createStar(starName, starId, { from: user1 });
+    // 2. Call your method lookUptokenIdToStarInfo
+    let foundedStarName = await instance.lookUptokenIdToStarInfo(starId);
+    // 3. Verify if you Star name is the same
+    assert.equal(foundedStarName, starName);
+    // 4. Verify that nothing has been founded
+    let notFounded = await instance.lookUptokenIdToStarInfo(777);
+    assert.isNotOk(notFounded, 'No stars founded by token id');
+
 });
 
 it('lets 2 users exchange stars', async () => {
@@ -104,9 +123,3 @@ it('lets a user transfer a star', async () => {
     assert.fail("not implemented yet");
 });
 
-it('lookUptokenIdToStarInfo test', async () => {
-    // 1. create a Star with different tokenId
-    // 2. Call your method lookUptokenIdToStarInfo
-    // 3. Verify if you Star name is the same
-    assert.fail("not implemented yet");
-});
