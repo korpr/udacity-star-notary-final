@@ -8,8 +8,9 @@ contract StarNotary is ERC721 {
     // Star data
     struct Star {
         string name;
+        uint256 timestamp;
     }
-
+    event TestEvent(string message);
     // Implement Task 1 Add a name and symbol properties
 
     // name: Is a short name to your token
@@ -29,8 +30,9 @@ contract StarNotary is ERC721 {
     // Create Star using the Struct
     function createStar(string memory name, uint256 tokenId) public {
         // Passing the name and tokenId as a parameters
-        Star memory newStar = Star(name); // Star is an struct so we are creating a new Star
+        Star memory newStar = Star(name, now); // Star is an struct so we are creating a new Star
         //TODO:: generae  token id
+        //TODO throw  error if star existed
         tokenIdToStarInfo[tokenId] = newStar; // Creating in memory the Star -> tokenId mapping
         _mint(msg.sender, tokenId); // _mint assign the the star with _tokenId to the sender address (ownership)
     }
@@ -69,15 +71,31 @@ contract StarNotary is ERC721 {
         returns (string memory)
     {
         //1. You should return the Star saved in tokenIdToStarInfo mapping
-        return  tokenIdToStarInfo[_tokenId].name;
+        return tokenIdToStarInfo[_tokenId].name;
     }
 
     // Implement Task 1 Exchange Stars function
     function exchangeStars(uint256 _tokenId1, uint256 _tokenId2) public {
         //1. Passing to star tokenId you will need to check if the owner of _tokenId1 or _tokenId2 is the sender
+        require(_tokenId1 != _tokenId2, "Same token can not be exchanged");
+        require(tokenIdToStarInfo[_tokenId1].timestamp != 0,"No star founded for _tokenId1");
+        require(tokenIdToStarInfo[_tokenId2].timestamp != 0,"No star founded for _tokenId2");
+       
+        require(_isApprovedOrOwner(msg.sender, _tokenId1) ||
+                _isApprovedOrOwner(msg.sender, _tokenId2),
+            "The sender should be the owner or approved for transfer for one star");
+       
         //2. You don't have to check for the price of the token (star)
         //3. Get the owner of the two tokens (ownerOf(_tokenId1), ownerOf(_tokenId1)
+        address owner1 = ownerOf(_tokenId1);
+        address owner2 = ownerOf(_tokenId2);
+        require(owner2 != owner1, "both stars are owned by one account");
+        //TODO: looks like the check is the deal approved by all owner is a great idea
+        //for example  add  another mapping for store data owner , desired star and  star for exchange(address=>(desiredTokenId=>tokenForExcahngeId))
+        //but in that case  we have to  clear this table after transfer
         //4. Use _transferFrom function to exchange the tokens.
+        _transferFrom(owner1, owner2, _tokenId1);
+        _transferFrom(owner2, owner1, _tokenId2);
     }
 
     // Implement Task 1 Transfer Stars
