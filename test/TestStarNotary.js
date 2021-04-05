@@ -51,7 +51,7 @@ it('lets user2 buy a star, if it is put up for sale', async () => {
     let balance = web3.utils.toWei(".05", "ether");
     await instance.createStar('awesome star', starId, { from: user1 });
     await instance.putStarUpForSale(starId, starPrice, { from: user1 });
-    let balanceOfUser1BeforeTransaction = await web3.eth.getBalance(user2);
+    
     await instance.buyStar(starId, { from: user2, value: balance });
     assert.equal(await instance.ownerOf.call(starId), user2);
 });
@@ -65,7 +65,7 @@ it('lets user2 buy a star and decreases its balance in ether', async () => {
     let balance = web3.utils.toWei(".05", "ether");
     await instance.createStar('awesome star', starId, { from: user1 });
     await instance.putStarUpForSale(starId, starPrice, { from: user1 });
-    let balanceOfUser1BeforeTransaction = await web3.eth.getBalance(user2);
+    
     const balanceOfUser2BeforeTransaction = await web3.eth.getBalance(user2);
     await instance.buyStar(starId, { from: user2, value: balance, gasPrice: 0 });
     const balanceAfterUser2BuysStar = await web3.eth.getBalance(user2);
@@ -135,15 +135,12 @@ it("exchange should fail. One of the stars doen't exist", async () => {
     let starTwoId = 11;
     //second star didnt exist
     instance.exchangeStars(starOneId, starTwoId, { from: user1 })
-        .then(() => {
-            console.log(e)
-            assert.ok(false, "It didn't fail");
-        })
+        .then(() => { assert.fail("It didn't fail"); })
         .catch(() => { assert.ok(true, "Passed"); });
 
     //first star didnt exist
     instance.exchangeStars(starOneId, starTwoId, { from: user1 })
-        .then(() => { assert.ok(false, "It didn't fail"); })
+        .then(() => { assert.fail("It didn't fail"); })
         .catch(() => { assert.ok(true, "Passed"); });
 });
 it("exchange should fail. Try to exchange the same star", () => {
@@ -154,7 +151,7 @@ it("exchange should fail. Try to exchange the same star", () => {
         instance.createStar("1", starOneId, { from: user1 }).then(() => {
             //second star didnt exist
             instance.exchangeStars(starOneId, starOneId, { from: user1 })
-                .then(() => { assert.ok(false, "It didn't fail"); })
+                .then(() => { assert.fail("It didn't fail"); })
                 .catch(() => { assert.ok(true, "Passed"); });
         });
     });
@@ -171,7 +168,7 @@ it('exchange should fail. Both stars are owned by one use', async () => {
     await instance.createStar("2", starTwoId, { from: user1 });
     // 2. Call the exchangeStars functions implemented in the Smart Contract
     instance.exchangeStars(starOneId, starTwoId, { from: user1 })
-        .then(() => { assert.ok(false, "It didn't fail"); })
+        .then(() => { assert.faile("It didn't fail"); })
         .catch(() => { assert.ok(true, "Passed"); });
 
 });
@@ -187,7 +184,7 @@ it('exchange should fail. Exchange fired by stranger', async () => {
     await instance.createStar("2", starTwoId, { from: user2 });
     // 2. Call the exchangeStars functions implemented in the Smart Contract
     instance.exchangeStars(starOneId, starTwoId, { from: user3 })
-        .then(() => { assert.ok(false, "It didn't fail"); })
+        .then(() => { assert.fail("It didn't fail"); })
         .catch(() => { assert.ok(true, "Passed"); });
 
     assert.equal(await instance.ownerOf(starOneId), user1);
@@ -213,8 +210,32 @@ it('exchange should success. Exchange fired by approved account', async () => {
 });
 it('lets a user transfer a star', async () => {
     // 1. create a Star with different tokenId
+    let instance = await StarNotary.deployed();
+    let user1 = accounts[6];
+    let user2 = accounts[7];
     // 2. use the transferStar function implemented in the Smart Contract
+    let starOneId = 18;
+    await instance.createStar("1", starOneId, { from: user1 });
     // 3. Verify the star owner changed.
-    assert.fail("not implemented yet");
+    await instance.transferStar(user2, starOneId, { from: user1 });
+    assert.equal(await instance.ownerOf(starOneId), user2);
+    assert.equal(Number(await instance.balanceOf(user1)), 0);
+    assert.equal(Number(await instance.balanceOf(user2)), 1);
+});
+
+it('transfer should failed. Fired by stranger', async () => {
+    // 1. create a Star with different tokenId
+    let instance = await StarNotary.deployed();
+    let user1 = accounts[1];
+    let user2 = accounts[2];
+    // 2. use the transferStar function implemented in the Smart Contract
+    let starOneId = 19;
+    await instance.createStar("1", starOneId, { from: user1 });
+    // 3. Verify the star owner changed.
+    instance.transferStar(user2, starOneId, { from: user2 })
+        .then(() => { assert.fail("It didn't fail") })
+        .catch(() => { assert.ok(true) });
+    assert.equal(await instance.ownerOf(starOneId), user1);
+
 });
 

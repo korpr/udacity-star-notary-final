@@ -10,31 +10,46 @@ contract StarNotary is ERC721 {
         string name;
         uint256 timestamp;
     }
-    event TestEvent(string message);
+
     // Implement Task 1 Add a name and symbol properties
 
     // name: Is a short name to your token
-    string private _name;
+    string private _tokenName;
     // symbol: Is a short string like 'USD' -> 'American Dollar'
-    string private _symbol;
+    string private _tokenSymbol;
     // mapping the Star with the Owner Address
     mapping(uint256 => Star) public tokenIdToStarInfo;
     // mapping the TokenId and price
     mapping(uint256 => uint256) public starsForSale;
 
-    constructor(string memory name, string memory symbol) public {
-        _name = name;
-        _symbol = symbol;
+    constructor(string memory _name, string memory _symbol) public {
+        _tokenName = _name;
+        _tokenSymbol = _symbol;
+    }
+
+    /**
+     * @dev Gets the token name
+     * @return string representing the token name
+     */
+    function name() external view returns (string memory) {
+        return _tokenName;
+    }
+
+    /**
+     * @dev Gets the token symbol
+     * @return string representing the token symbol
+     */
+    function symbol() external view returns (string memory) {
+        return _tokenSymbol;
     }
 
     // Create Star using the Struct
-    function createStar(string memory name, uint256 tokenId) public {
+    function createStar(string memory _name, uint256 _tokenId) public {
         // Passing the name and tokenId as a parameters
-        Star memory newStar = Star(name, now); // Star is an struct so we are creating a new Star
-        //TODO:: generae  token id
-        //TODO throw  error if star existed
-        tokenIdToStarInfo[tokenId] = newStar; // Creating in memory the Star -> tokenId mapping
-        _mint(msg.sender, tokenId); // _mint assign the the star with _tokenId to the sender address (ownership)
+        //TODO: generate token id
+        Star memory newStar = Star(_name, now); // Star is an struct so we are creating a new Star
+        tokenIdToStarInfo[_tokenId] = newStar; // Creating in memory the Star -> tokenId mapping
+        _mint(msg.sender, _tokenId); // _mint assign the the star with _tokenId to the sender address (ownership)
     }
 
     // Putting an Star for sale (Adding the star tokenid into the mapping starsForSale, first verify that the sender is the owner)
@@ -44,11 +59,6 @@ contract StarNotary is ERC721 {
             "You can't sale the Star you don't owned"
         );
         starsForSale[_tokenId] = _price;
-    }
-
-    // Function that allows you to convert an address into a payable address
-    function _make_payable(address x) internal pure returns (address payable) {
-        return address(uint160(x));
     }
 
     function buyStar(uint256 _tokenId) public payable {
@@ -78,21 +88,29 @@ contract StarNotary is ERC721 {
     function exchangeStars(uint256 _tokenId1, uint256 _tokenId2) public {
         //1. Passing to star tokenId you will need to check if the owner of _tokenId1 or _tokenId2 is the sender
         require(_tokenId1 != _tokenId2, "Same token can not be exchanged");
-        require(tokenIdToStarInfo[_tokenId1].timestamp != 0,"No star founded for _tokenId1");
-        require(tokenIdToStarInfo[_tokenId2].timestamp != 0,"No star founded for _tokenId2");
-       
-        require(_isApprovedOrOwner(msg.sender, _tokenId1) ||
+        require(
+            tokenIdToStarInfo[_tokenId1].timestamp != 0,
+            "No star founded for _tokenId1"
+        );
+        require(
+            tokenIdToStarInfo[_tokenId2].timestamp != 0,
+            "No star founded for _tokenId2"
+        );
+
+        require(
+            _isApprovedOrOwner(msg.sender, _tokenId1) ||
                 _isApprovedOrOwner(msg.sender, _tokenId2),
-            "The sender should be the owner or approved for transfer for one star");
-       
+            "The sender should be the owner or approved for transfer for one star"
+        );
+
         //2. You don't have to check for the price of the token (star)
         //3. Get the owner of the two tokens (ownerOf(_tokenId1), ownerOf(_tokenId1)
         address owner1 = ownerOf(_tokenId1);
         address owner2 = ownerOf(_tokenId2);
         require(owner2 != owner1, "both stars are owned by one account");
-        //TODO: looks like the check is the deal approved by all owner is a great idea
-        //for example  add  another mapping for store data owner , desired star and  star for exchange(address=>(desiredTokenId=>tokenForExcahngeId))
-        //but in that case  we have to  clear this table after transfer
+        //TODO: Here we can check that the exchange is approved by the owner of the second star.
+        //We can use a mapping (address=>(desiredTokenId=>tokenForExcahngeId)) for it.
+        //Unfortunately, in this case, we should use a fully custom realization of ERC721
         //4. Use _transferFrom function to exchange the tokens.
         _transferFrom(owner1, owner2, _tokenId1);
         _transferFrom(owner2, owner1, _tokenId2);
@@ -101,22 +119,16 @@ contract StarNotary is ERC721 {
     // Implement Task 1 Transfer Stars
     function transferStar(address _to1, uint256 _tokenId) public {
         //1. Check if the sender is the ownerOf(_tokenId)
+        require(
+            _isApprovedOrOwner(msg.sender, _tokenId),
+            "Sender should be owner or approved for transfer"
+        );
         //2. Use the transferFrom(from, to, tokenId); function to transfer the Star
+        transferFrom(msg.sender, _to1, _tokenId);
     }
 
-    /**
-     * @dev Gets the token name
-     * @return string representing the token name
-     */
-    function name() external view returns (string memory) {
-        return _name;
-    }
-
-    /**
-     * @dev Gets the token symbol
-     * @return string representing the token symbol
-     */
-    function symbol() external view returns (string memory) {
-        return _symbol;
+    // Function that allows you to convert an address into a payable address
+    function _make_payable(address x) internal pure returns (address payable) {
+        return address(uint160(x));
     }
 }
