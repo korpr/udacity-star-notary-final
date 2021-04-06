@@ -70,9 +70,7 @@ const App = {
     } else {
       App.setStatus(`The name of the star is ${name}`);
     }
-
   }
-
 };
 
 window.App = App;
