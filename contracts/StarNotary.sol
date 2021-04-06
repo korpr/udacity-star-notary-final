@@ -45,6 +45,10 @@ contract StarNotary is ERC721 {
 
     // Create Star using the Struct
     function createStar(string memory _name, uint256 _tokenId) public {
+        require(
+            tokenIdToStarInfo[_tokenId].timestamp == 0,
+            "Star with id is exists"
+        );
         // Passing the name and tokenId as a parameters
         //TODO: generate token id
         Star memory newStar = Star(_name, now); // Star is an struct so we are creating a new Star

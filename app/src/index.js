@@ -1,12 +1,14 @@
 import Web3 from "web3";
 import starNotaryArtifact from "../../build/contracts/StarNotary.json";
-
+Number.isPositiveInteger = Number.isPositiveInteger || function (value) {
+  return /^\+?\d+$/.test(value);
+};
 const App = {
   web3: null,
   account: null,
   meta: null,
 
-  start: async function() {
+  start: async function () {
     const { web3 } = this;
 
     try {
@@ -26,30 +28,56 @@ const App = {
     }
   },
 
-  setStatus: function(message) {
+  setStatus: function (message) {
     const status = document.getElementById("status");
     status.innerHTML = message;
   },
 
-  createStar: async function() {
-    alert(1)
+  createStar: async function () {
     const { createStar } = this.meta.methods;
     const name = document.getElementById("starName").value;
     const id = document.getElementById("starId").value;
-    await createStar(name, id).send({from: this.account});
-    App.setStatus("New Star Owner is " + this.account + ".");
+    try {
+      if (name.trim().length === 0) {
+        App.setStatus("Name is required");
+        return;
+      }
+
+      if (!Number.isPositiveInteger(id) || id < 0) {
+        App.setStatus("Id should be positive integer");
+        return;
+      }
+      await createStar(name, id).send({ from: this.account });
+      App.setStatus(`New Star Owner is ${this.account}.`);
+    } catch (e) {
+      console.log(e);
+      App.setStatus("New Star isn't created.");
+    }
   },
 
   // Implement Task 4 Modify the front end of the DAPP
-  lookUp: async function (){
-    
+  lookUp: async function () {
+    const id = document.getElementById("lookid").value;
+    if (!Number.isPositiveInteger(id) || id < 0) {
+      App.setStatus("Id should be positive integer");
+      return;
+    }
+
+    const { lookUptokenIdToStarInfo } = this.meta.methods;
+    let name = await lookUptokenIdToStarInfo(id).call({ from: this.account });
+    if (name === '') {
+      App.setStatus(`No star found by id ${id}`);
+    } else {
+      App.setStatus(`The name of the star is ${name}`);
+    }
+
   }
 
 };
 
 window.App = App;
 
-window.addEventListener("load", async function() {
+window.addEventListener("load", async function () {
   if (window.ethereum) {
     // use MetaMask's provider
     App.web3 = new Web3(window.ethereum);
